@@ -1,91 +1,183 @@
-# AI-Assisted RAG-Based Document Reader
+# AI-Assisted RAG Document Reader (React + FastAPI + ChromaDB + Gemini)
 
-An end-to-end Streamlit application for uploading documents, indexing their content locally with FAISS, and asking natural-language questions with RAG-powered answers.
+A production-ready, high-performance RAG (Retrieval-Augmented Generation) document reader web application built with a modern **React 19 + TypeScript** frontend and a **Python FastAPI** backend powered by **ChromaDB**, **SentenceTransformers**, **LangChain**, and **Google Gemini 2.0 Flash**.
 
-## Project Overview
+---
 
-This app lets users upload PDF and DOCX files, extracts their text, splits the content into overlapping chunks, creates embeddings with `all-MiniLM-L6-v2`, stores them in a local FAISS vector database, and uses Gemini to generate context-aware answers.
+## 🌟 Features
 
-## Features
+- **ChatGPT-Style Modern UI**: Glassmorphism design, dark/light themes, sleek animations (Framer Motion), and responsive layout.
+- **Multi-Format Document Ingestion**: Upload PDF (`.pdf`) and Microsoft Word (`.docx`) files with drag-and-drop support and batch processing progress.
+- **Persistent Vector Store (ChromaDB)**: Replaces legacy FAISS with persistent local storage in `backend/chroma_db/` supporting HNSW similarity search and metadata tracking.
+- **Optimized Text Chunking**: Powered by LangChain's `RecursiveCharacterTextSplitter` (`chunk_size=800`, `chunk_overlap=150`) to preserve paragraph boundaries.
+- **Advanced Retrieval**:
+  - Cosine similarity + **Maximum Marginal Relevance (MMR)** search for diverse context retrieval.
+  - Chunk deduplication and relevance score thresholding.
+  - Context reranking prior to LLM answer generation.
+- **Google Gemini 2.0 Flash Integration**: RAG answer generation with citation attribution and fallback error handling.
+- **Rich Chat Features**:
+  - Markdown rendering with code syntax highlighting and table formatting.
+  - Source chunk inspector modal displaying similarity scores (%) and text previews.
+  - Copy response to clipboard.
+  - Export chat history to **Markdown (.md)** or **PDF (.pdf)**.
+  - Quick suggested question prompt pills.
+- **Live System Metrics**: Monitor vector store size (MB), total chunk counts, document listings, search latency, and LLM timing metrics.
 
-- Streamlit chatbot UI for document Q&A
-- Multi-file upload support for PDF and DOCX files
-- Text extraction with PyPDF2 and python-docx
-- Text cleaning and overlapping chunking
-- SentenceTransformer embeddings with `all-MiniLM-L6-v2`
-- Local FAISS vector storage with save/load support
-- Top-5 retrieval using cosine similarity
-- Gemini-powered RAG responses
-- Chat history and clear-chat support
-- Loading spinner during answer generation
-- Validation for invalid files, empty documents, missing API keys, and oversized uploads
+---
 
-## Architecture
+## 🏗️ Architecture
 
 ```mermaid
 flowchart TD
-    A[Upload PDFs/DOCX] --> B[Text Extraction]
-    B --> C[Cleaning + Chunking]
-    C --> D[SentenceTransformer Embeddings]
-    D --> E[FAISS Vector Store]
-    F[User Question] --> G[Question Embedding]
-    G --> E
-    E --> H[Top-5 Retrieved Chunks]
-    H --> I[RAG Prompt Builder]
-    I --> J[Gemini / OpenAI]
-    J --> K[Answer + Sources]
+    subgraph Frontend["React 19 + TypeScript Frontend"]
+        UI[Chat Interface & Sidebar]
+        Dropzone[Drag & Drop File Upload]
+        Exporter[Export .MD / .PDF]
+    end
+
+    subgraph Backend["FastAPI Python Backend"]
+        API[FastAPI Routers]
+        Parser[PDF & DOCX Parsers]
+        Chunker[Recursive Text Splitter]
+        Embedder[SentenceTransformers Singleton]
+        Chroma[(ChromaDB Persistent Store)]
+        LLM[Google Gemini 2.0 Flash Engine]
+    end
+
+    Dropzone -->|POST /upload| API
+    API --> Parser --> Chunker --> Embedder --> Chroma
+    UI -->|POST /chat| API
+    API -->|MMR Search| Chroma
+    Chroma -->|Top-K Chunks| LLM
+    LLM -->|RAG Response + Sources| UI
 ```
 
-## Installation
+---
 
-1. Create and activate a Python virtual environment.
-2. Install dependencies:
+## 📁 Directory Structure
+
+```text
+Ai-doc-reader/
+├── backend/                  # FastAPI Application
+│   ├── app/
+│   │   ├── main.py           # FastAPI entrypoint & startup lifespan
+│   │   ├── config.py         # App configuration & .env loader
+│   │   ├── routers/
+│   │   │   ├── health.py     # GET /health & GET /stats
+│   │   │   ├── documents.py  # GET /documents & DELETE /documents
+│   │   │   ├── upload.py     # POST /upload
+│   │   │   └── chat.py       # POST /chat
+│   │   ├── services/
+│   │   │   ├── embedding_service.py # Singleton sentence-transformers loader
+│   │   │   ├── chroma_service.py    # ChromaDB persistent vector manager
+│   │   │   ├── doc_parser.py        # PDF & DOCX text extractors
+│   │   │   ├── chunker.py           # Recursive text chunker
+│   │   │   └── llm_service.py       # Gemini 2.0 Flash RAG engine
+│   │   └── models/
+│   │       └── schemas.py    # Pydantic data schemas
+│   ├── chroma_db/            # Persistent ChromaDB storage
+│   ├── requirements.txt      # Python dependencies
+│   └── .env                  # API keys & configuration
+│
+└── frontend/                 # React 19 + Vite Application
+    ├── src/
+    │   ├── components/
+    │   │   ├── layout/       # Sidebar & Top Bar
+    │   │   ├── chat/         # MessageItem, ChatInput, SourcesModal
+    │   │   ├── upload/       # FileDropzone
+    │   │   └── stats/        # DocumentStatsModal
+    │   ├── services/         # Axios API client
+    │   ├── contexts/         # ThemeContext (Dark/Light mode)
+    │   ├── types/            # TypeScript interfaces
+    │   └── utils/            # Export utilities (.md & .pdf)
+    ├── package.json
+    ├── vite.config.ts
+    └── tailwind.config.js
+```
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Python**: 3.10+
+- **Node.js**: 18+ and `npm`
+
+---
+
+### 1. Backend Setup (FastAPI)
+
+Navigate to the `backend/` directory:
+
+```bash
+cd backend
+```
+
+Install Python dependencies:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the project folder with your Gemini key:
+Create a `.env` file inside `backend/` (or update existing):
 
-```bash
-GEMINI_API_KEY=your_key_here
+```env
+GEMINI_API_KEY=your_google_gemini_api_key_here
 GEMINI_MODEL=gemini-2.0-flash
+EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+CHROMA_DB_DIR=backend/chroma_db
 ```
 
-If you prefer, copy the provided `.env.example` file to `.env` and fill in the key.
-
-## Usage
-
-Run the app:
+Start the FastAPI backend server:
 
 ```bash
-streamlit run app.py
+python -m uvicorn app.main:app --reload --port 8000
 ```
 
-Then:
+The API will be live at `http://localhost:8000` (Interactive API docs at `http://localhost:8000/docs`).
 
-1. Upload one or more PDF or DOCX files.
-2. Click Process documents.
-3. Ask a question in the chat input.
-4. Review the generated answer and the retrieved sources.
+---
 
-## Screenshots
+### 2. Frontend Setup (React + Vite)
 
-Add application screenshots here after running the app locally.
+Navigate to the `frontend/` directory:
 
-## Future Improvements
+```bash
+cd frontend
+```
 
-- Add OCR support for scanned PDFs
-- Add document-level citations with exact page references
-- Add streaming token-by-token responses
-- Add per-document filters and reindex controls
-- Add richer source highlighting in the UI
+Install Node.js dependencies:
 
-## Local Persistence
+```bash
+npm install --legacy-peer-deps
+```
 
-The FAISS index and chunk metadata are saved in `data/vector_store/` so the app can be restarted without losing the indexed corpus.
+Start the Vite development server:
 
-## Configuration
+```bash
+npm run dev
+```
 
-- `GEMINI_API_KEY`: required, loaded from `.env`
-- `GEMINI_MODEL`: optional, defaults to `gemini-2.0-flash` and automatically falls back to an available Gemini model if needed
+Open `http://localhost:5173` in your web browser.
+
+---
+
+## 🔌 API Reference
+
+| Endpoint | Method | Description |
+| :--- | :--- | :--- |
+| `/health` | `GET` | Server health check and model loading status |
+| `/stats` | `GET` | System metrics, document counts, and DB size (MB) |
+| `/upload` | `POST` | Ingest multiple PDF/DOCX files into ChromaDB |
+| `/chat` | `POST` | Ask context-aware questions and retrieve RAG answer + sources |
+| `/documents` | `GET` | List all indexed document names and metadata |
+| `/documents` | `DELETE` | Purge all indexed documents from ChromaDB |
+
+---
+
+## ⚙️ Key Configuration Options
+
+- `GEMINI_API_KEY`: Google Gemini API Key (Required for AI answer generation).
+- `EMBEDDING_MODEL_NAME`: HuggingFace embedding model (Default: `sentence-transformers/all-MiniLM-L6-v2`).
+- `CHUNK_SIZE` & `CHUNK_OVERLAP`: Text chunking parameters (Default: 800 characters / 150 overlap).

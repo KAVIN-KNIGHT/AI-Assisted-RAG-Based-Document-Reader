@@ -1,0 +1,36 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "tsc -b",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.28.9",
+    "axios": "^1.6.8",
+    "clsx": "^2.1.0",
+    "framer-motion": "^11.0.24",
+    "jspdf": "^2.5.1",
+    "lucide-react": "^0.359.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^9.0.1",
+    "rehype-highlight": "^7.0.0",
+    "remark-gfm": "^4.0.0",
+    "tailwind-merge": "^2.2.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^20.11.30",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "tailwindcss": "^4.0.0",
+    "typescript": "^5.4.3",
+    "vite": "^5.2.0"
+  }
+}
